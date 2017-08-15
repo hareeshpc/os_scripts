@@ -1,0 +1,15 @@
+
+EXTERNAL_NET_CREATE="neutron net-create EXTERNAL_NET \
+   --router:external True \
+   --provider:network_type vlan \
+   --provider:physical_network physnet1 \
+   --provider:segmentation_id 304 1> /dev/null "
+
+EXTERNAL_SUBNET_CREATE="neutron subnet-create
+  --gateway 10.23.220.49 \
+	--allocation-pool start=10.23.220.52,end=10.23.220.62 \
+  --dns-nameserver 172.29.74.154 \
+  --disable-dhcp \
+  --ip-version 4 \
+  --name ext_subnet \
+  EXTERNAL_NET 10.23.220.48/28 1> /dev/null"
