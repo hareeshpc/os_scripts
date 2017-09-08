@@ -1,0 +1,56 @@
+
+#!/bin/sh
+
+#Globally defined variables
+# ROUTER_ID
+# ROUTER_NAME
+# ACTIVE_HOST_NAME
+# CONTAINER_NAME
+
+FIND_ROUTER_ID_FROM_NAME(){
+  ROUTER_NAME=$1
+  local router_name=${ROUTER_NAME}
+  res=$(openstack router list | grep -w ${router_name} | wc -l)
+  if [ $res == 0 ]; then
+    INFO "No router matches name: ${router_name}"
+    exit -1
+  elif [ $res -gt 1 ]; then
+    INFO "More than one router matches name: ${router_name}"
+    exit -1
+  fi
+  ROUTER_ID=$(openstack router list | grep -w ${router_name} | cut -d "|" -f 2 | tr -dc '0-9a-z-')
+  INFO "ID for router name: ${router_name} is "${ROUTER_ID}
+}
+
+FIND_ACTIVE_HOST_FOR_ROUTER(){
+  #Args: router_id
+  local router_id=$1
+  local router_name=${ROUTER_NAME}
+  res=$(neutron l3-agent-list-hosting-router ${router_id} | grep -w "active" | wc -l)
+  if [ $res == 0 ]; then
+    INFO "No host is active yet for ${router_name}"
+    exit -1
+  elif [ $res -gt 1 ]; then
+    INFO "More than one host active for router name: ${router_name}"
+    exit -1
+  fi
+  ACTIVE_HOST_NAME=$(neutron l3-agent-list-hosting-router ${router_id} | grep -w "active" | cut -d "|" -f 3 | tr -dc '0-9a-zA-Z-')
+  INFO "Active host name for router name: ${router_name} is "${ACTIVE_HOST_NAME}
+}
+
+FIND_L3AGENT_CONTAINER_NAME(){
+  # Args hostname
+  local hostname=$1
+  CONTAINER_NAME=$(ssh ${hostname} "dp | grep l3 | awk '{ print \$1}'")
+  DEBUG $CONTAINER_NAME
+}
+
+echo_and_do() {
+  DEBUG "Executing: $@"
+  "$@"
+}
+
+INSIDE_NAMESPACE(){
+  # ssh -t i11-ctrl-sr-1 "docker exec -itu root neutron_l3_agent_9704 ip netns exec qrouter-3c0ef0a4-b90c-4ff9-b56d-1bc58f8bf118 bash"
+  echo_and_do ssh -t ${ACTIVE_HOST_NAME} docker exec -itu root ${CONTAINER_NAME} ip netns exec qrouter-${ROUTER_ID} bash
+}
