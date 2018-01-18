@@ -8,10 +8,32 @@ DOWNLOAD_CIRROS(){
   fi
 }
 
+CREATE_KEYS(){
+  if [ ! -f /root/.ssh/openstack.pub ]; then
+    echo "Creating neccessary ssh keys [.ssh/openstack{.pub}]"
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/openstack -C openstack@mercury
+  fi
+}
+
+NOVA_ADD_KEYS(){
+  echo "Creating keypair openstack if needed.."
+  local res=$( openstack keypair list | grep openstack | wc -l)
+  if [ $res != 1 ]; then
+    openstack keypair create --public-key ~/.ssh/openstack.pub openstack
+  fi
+}
+
+NOVA_DEL_KEYS(){
+  echo "Deleting keypair openstack if needed.."
+  local res=$( openstack keypair list | grep openstack | wc -l)
+  if [ $res == 1 ]; then
+    openstack keypair delete openstack
+  fi
+}
 
 CREATE_FLAVORS(){
   echo "Creating m1.tiny flavor if needed...."
-  res=$(openstack flavor list | grep '^| [0-9a-f]' | egrep -w "m1.tiny" | wc -l)
+  local res=$(openstack flavor list | grep '^| [0-9a-f]' | egrep -w "m1.tiny" | wc -l)
   if [ $res != 1 ]; then
     openstack flavor create --public m1.tiny --id auto --ram 1024 --disk 1 --vcpus 1 --rxtx-factor 1 --property hw:mem_page_size=large 1> /dev/null
   fi

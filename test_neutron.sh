@@ -1,26 +1,27 @@
 #!/bin/bash
+source ./logger.sh
 source ~/openstack-configs/openrc
 source ./net_sub_router_gw_functions.sh
 source ./floating_ip_functions.sh
 source ./nova_functions.sh
 
 FUNC_USAGE() {
-    echo "Usage: $0 L3VM| L3 <start> <end> OR $0 CLEAN"
+    INFO "Usage: $0 L3VM| L3 <start> <end> OR $0 CLEAN"
 }
 
 SILENT="1> /dev/null"
 NETMASK="24"
 
 CLEAN_ALL(){
-  echo ""
-  echo "===========Cleaning up============="
-  echo "[Cleaning Floating IPs]"
+  DEBUG ""
+  DEBUG "===========Cleaning up============="
+  DEBUG "[Cleaning Floating IPs]"
   DELETE_ALL_FLOATING_IP
-  echo "[Cleaning VMs]"
+  DEBUG "[Cleaning VMs]"
   CLEAN_ALL_VMS
-  echo "[Cleaning Routers]"
+  DEBUG "[Cleaning Routers]"
   FUNC_CLEAN_ROUTERS
-  echo "[Cleaning Networks]"
+  DEBUG "[Cleaning Networks]"
   FUNC_CLEAN_NETS
 }
 
