@@ -22,7 +22,7 @@ CLEAN_ALL(){
   DEBUG "[Cleaning Routers]"
   FUNC_CLEAN_ROUTERS
   DEBUG "[Cleaning Networks]"
-  FUNC_CLEAN_NETS
+  FUNC_CLEAN_NETS_EXCLUDE_EXTERNAL
 }
 
 CLEAN_ALL_VMS(){
@@ -33,11 +33,11 @@ CLEAN_ALL_VMS(){
 TEST_L3VM(){
   local startindex=$1
   local endindex=$2
-  echo "Creating external network.."
-  eval $EXTERNAL_NET_CREATE
-  echo "Creating external subnet...."
-  eval $EXTERNAL_SUBNET_CREATE
-
+  # echo "Creating external network.."
+  # eval $EXTERNAL_NET_CREATE
+  # echo "Creating external subnet...."
+  # eval $EXTERNAL_SUBNET_CREATE
+  FUNC_FIND_EXTERNAL_NET
   for i in $(eval echo {${startindex}..${endindex}});
   do
     FUNC_NET_CREATE $i
@@ -49,7 +49,7 @@ TEST_L3VM(){
     local vm_name=test_vm$i
     CREATE_VM_PREREQ
     VM_CREATE net$i ${vm_name}
-    CREATE_FLOATING_IP EXTERNAL_NET
+    CREATE_FLOATING_IP ${EXTERNAL_NET}
     ASSOCIATE_FLOATING_IP_WITH_VM ${vm_name} ${fip_ip}
   done
 
@@ -64,8 +64,9 @@ TEST_L3VM(){
 TEST_L3(){
 local startindex=$1
 local endindex=$2
-eval $EXTERNAL_NET_CREATE
-eval $EXTERNAL_SUBNET_CREATE
+# eval $EXTERNAL_NET_CREATE
+# eval $EXTERNAL_SUBNET_CREATE
+FUNC_FIND_EXTERNAL_NET
 
 for i in $(eval echo {${startindex}..${endindex}});
 do
@@ -77,7 +78,7 @@ do
   FUNC_ROUTER_GATEWAY_SET $i
 
   # Floating ip stuff
-  CREATE_FLOATING_IP EXTERNAL_NET
+  CREATE_FLOATING_IP ${EXTERNAL_NET_ID}
   ASSOCIATE_FLOATING_IP_SUBNET subnet$i
 done
 
@@ -92,7 +93,7 @@ echo " "
 echo "=============CLEANING UP============"
 DELETE_ALL_FLOATING_IP
 FUNC_CLEAN_ROUTERS
-FUNC_CLEAN_NETS
+FUNC_CLEAN_NETS_EXCLUDE_EXTERNAL
 }
 
 if [ $# -eq 3 ]

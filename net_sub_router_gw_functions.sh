@@ -2,20 +2,17 @@
 
 source ./config
 
-# EXTERNAL_NET_CREATE="neutron net-create EXTERNAL_NET \
-#    --router:external True \
-#    --provider:network_type vlan \
-#    --provider:physical_network physnet1 \
-#    --provider:segmentation_id 304"
-#
-# EXTERNAL_SUBNET_CREATE="neutron subnet-create
-#   --gateway 10.23.220.49 \
-# 	--allocation-pool start=10.23.220.52,end=10.23.220.62 \
-#   --dns-nameserver 172.29.74.154 \
-#   --disable-dhcp \
-#   --ip-version 4 \
-#   --name ext_subnet \
-#   EXTERNAL_NET 10.23.220.48/28"
+FUNC_FIND_EXTERNAL_NET(){
+  echo "Finding suitable external network...."
+  res=$(neutron net-list -c id -c name -c router:external | grep '| [0-9a-f]' | grep True | cut -d "|" -f 2| wc -l)
+  if [ $res -gt 0 ]; then
+    EXTERNAL_NET_ID=$(neutron net-list -c id -c name -c router:external | grep '| [0-9a-f]' | grep True | cut -d "|" -f 2)
+    EXTERNAL_NET=$(neutron net-list -c name -c id  -c router:external | grep '| [0-9a-f]' | grep True | cut -d "|" -f 2)
+    echo "Network: ${EXTERNAL_NET_ID} with name: ${EXTERNAL_NET} is an external network"
+  else
+    echo "No external network found"
+  fi
+}
 
 FUNC_NET_CREATE(){
   local cmd="neutron net-create net${i} ${SILENT}"
@@ -40,7 +37,7 @@ FUNC_ROUTER_INTERFACE_ADD(){
 }
 
 FUNC_ROUTER_GATEWAY_SET(){
-  neutron router-gateway-set r${1} EXTERNAL_NET
+  neutron router-gateway-set r${1} ${EXTERNAL_NET_ID}
 }
 
 FUNC_CLEAN_ROUTERS(){
@@ -54,9 +51,17 @@ do
   neutron router-delete $router
 done
 }
+
 FUNC_CLEAN_NETS(){
 for net in $(neutron net-list | grep '^| [0-9a-f]' | cut -d "|" -f2)
 do
     neutron net-delete $net
+done
+}
+
+FUNC_CLEAN_NETS_EXCLUDE_EXTERNAL(){
+for net in $(neutron net-list -c id -c name -c router:external | grep '| [0-9a-f]' | grep -v True | cut -d "|" -f 2)
+do
+  neutron net-delete $net
 done
 }
